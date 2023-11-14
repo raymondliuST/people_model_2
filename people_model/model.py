@@ -4,6 +4,7 @@ from .transformer import TransformerBlock
 from .embedding import TokenEmbedding
 import numpy as np
 import torch
+from .embedding import BERTEmbedding
 
 class MaskedLanguageModel(nn.Module):
     """
@@ -29,7 +30,7 @@ class PeopleModel(nn.Module):
     PeopleModel : Bidirectional Encoder Representations from Transformers.
     """
 
-    def __init__(self, vocab_size, hidden=768, n_layers=1, attn_heads=12, dropout=0.1):
+    def __init__(self, vocab_size, hidden=384, n_layers=6, attn_heads=6, dropout=0.1):
         """
         :param vocab_size: vocab_size of total words
         :param hidden: BERT model hidden size
@@ -42,12 +43,14 @@ class PeopleModel(nn.Module):
         self.hidden = hidden
         self.n_layers = n_layers
         self.attn_heads = attn_heads
+        self.dropout = dropout
+        
         self.vocab_size = vocab_size
         # paper noted they used 4*hidden_size for ff_network_hidden_size
         self.feed_forward_hidden = hidden * 4
 
         # embedding 
-        self.embedding = TokenEmbedding(self.vocab_size, self.hidden)
+        self.embedding = BERTEmbedding(vocab_size=vocab_size, embed_size=hidden)
 
         # multi-layers transformer blocks, deep network
         self.transformer_blocks = nn.ModuleList(
@@ -55,7 +58,7 @@ class PeopleModel(nn.Module):
         
         self.head = MaskedLanguageModel(self.hidden, self.vocab_size)
 
-        self.CEL = nn.CrossEntropyLoss(ignore_index = -100)
+        self.NLL = nn.NLLLoss(ignore_index=vocab_size)
 
     def forward(self, batch):
         # attention masking for padded token
@@ -74,19 +77,12 @@ class PeopleModel(nn.Module):
         return output
     
     def loss_func(self, batch, output):
-
-        batch_size = output.shape[0]
-        seq_length = output.shape[1]
-
-        label = batch["label"]
-        mask = batch["mask"]
-        label[~mask] = -100
-
-        output_flat = output.view(batch_size*seq_length, self.vocab_size)
-        target_flat = label.view(batch_size*seq_length)
         
-        loss = self.CEL(output_flat, target_flat)
+        prediction_matrix = output.transpose(1,2)
+        target_matrix = batch["label"]
 
+        loss = self.NLL(prediction_matrix, target_matrix)
+        
         return loss
     
     def mlm_accuracy(self, batch, output):
@@ -97,7 +93,6 @@ class PeopleModel(nn.Module):
         
         relevent_indexes = np.where(label != -100)
         relevent_predictions = predictions[relevent_indexes]
-
 
         relevent_targets = label[relevent_indexes]
 

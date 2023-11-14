@@ -57,7 +57,7 @@ def index_dataframe(df, vocab_dict):
     for col in df.columns:
         df = df.withColumn(col, word_to_idx_udf(col))
 
-    df.write.mode("overwrite").parquet("pm-dataset-indexed.parquet")
+    df.write.mode("overwrite").parquet("ml_dataset/pm-dataset-cleaned-indexed.parquet")
     return df
 
 def onehot_dataframe(df, vocab_dict):
@@ -70,13 +70,11 @@ def onehot_dataframe(df, vocab_dict):
     for col in df.columns:
         df = df.withColumn(col, word_to_onehot_udf(col))
 
-    df.write.mode("overwrite").parquet("pm-dataset-onehot.parquet")
+    df.write.mode("overwrite").parquet("pm-dataset-cleaned-onehot.parquet")
     return df
 
 
 
 if __name__ == "__main__":
-    df, vocab_dict = tokenize("ml_dataset/pm-dataset.parquet")
-
-    df_onehot = onehot_dataframe(df, vocab_dict)
+    df, vocab_dict = tokenize("ml_dataset/pm-dataset-cleaned.parquet")
     df_index = index_dataframe(df, vocab_dict)

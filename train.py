@@ -9,6 +9,7 @@ import torch
 from pytorch_lightning.loggers import WandbLogger  # Import WandbLogger
 from pytorch_lightning.callbacks import EarlyStopping
 
+
 def main(dataset_config_path):
     # Define your model, dataset, and dataloader
     with open(dataset_config_path, 'r') as file:
@@ -22,11 +23,15 @@ def main(dataset_config_path):
 
     dataloader = mlDataModule(config)
     vocab_size = len(dataloader.train_dataset.vocab_dict)
+    print(f"Vocab size is {vocab_size}")
+    print(f"Train Dataset contains {dataloader.train_dataset.__len__()} records")
 
     model_module = pmExperiment(config, vocab_size)
 
     # Initialize WandbLogger with your project name and any other desired settings
-    wandb_logger = WandbLogger(project="pm", log_model=True)
+    wandb_logger = WandbLogger(project="pm2", log_model=True)
+    for key, dict in config.items():
+        wandb_logger.experiment.config.update(dict)
 
     # Early stopping 
     early_stop_callback = EarlyStopping(
@@ -36,17 +41,19 @@ def main(dataset_config_path):
         verbose=False,
         mode='min'
     )
+
+    
     # Define a Lightning Trainer with WandbLogger for experiment tracking
     trainer = pl.Trainer(
         accelerator="gpu", 
         devices=1,
         logger=wandb_logger,  # Use the WandbLogger for experiment tracking
-        max_epochs=30,  # Number of training epochs
-        progress_bar_refresh_rate=10,  # Update the progress bar every 10 batches
+        max_epochs=80,  # Number of training epochs
+        progress_bar_refresh_rate=1,  # Update the progress bar every 10 batches
         log_every_n_steps=1,  # Log metrics every batch
         default_root_dir = "./checkpoints",
         gradient_clip_val=0.5,
-        callbacks=[early_stop_callback]
+        # callbacks=[early_stop_callback]
     )
 
     # Train the model

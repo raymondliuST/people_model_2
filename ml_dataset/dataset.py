@@ -26,7 +26,8 @@ class mlDataset(Dataset):
         if partition == "train":
             self.df = self.df
         else:
-            self.df = self.df[:1000]
+            self.df = self.df[:5000]
+
 
     def __len__(self):
         return len(self.df)
@@ -35,11 +36,11 @@ class mlDataset(Dataset):
         datapoint = torch.LongTensor(self.df.iloc[index].tolist())
 
         rand = torch.rand(datapoint.shape)
-        # has 25 percent chance to be masked
-        mask_arr = rand < 0.25
-        while all(mask_arr) == True:
-            mask_arr = rand < 0.25
-
+        # has 80 percent chance to be masked
+        mask_arr = rand < 0.8
+        # while all(mask_arr) == True:
+        #     mask_arr = rand < 0.8
+        mask_arr[-1] = False
         selection = torch.flatten((mask_arr).nonzero()).tolist()
         
         

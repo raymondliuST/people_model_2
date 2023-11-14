@@ -18,10 +18,10 @@ class mlDataModule(pl.LightningDataModule):
 
         
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.train_batch_size, num_workers=self.num_workers)
+        return DataLoader(self.train_dataset, batch_size=self.train_batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.val_batch_size, num_workers=self.num_workers)
+        return DataLoader(self.val_dataset, batch_size=self.val_batch_size, num_workers=self.num_workers, shuffle=True)
     
     # def collate_fn(self, data):
     #     return list(data)

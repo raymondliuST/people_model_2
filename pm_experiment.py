@@ -8,13 +8,21 @@ import torch.nn as nn
 import numpy as np
 from people_model import *
 
+
 class pmExperiment(pl.LightningModule):
 
     def __init__(self,
                  config: dict, vocab_size) -> None:
         super(pmExperiment, self).__init__()
+        self.save_hyperparameters()
 
-        self.model = PeopleModel(vocab_size)
+        model_config = config["model_params"]
+        self.model = PeopleModel(vocab_size, 
+                                 hidden=model_config["hidden"], 
+                                 n_layers = model_config["n_layers"], 
+                                 attn_heads = model_config["attn_heads"],
+                                 dropout=model_config["dropout"])
+        
         self.params = config["exp_params"]
         self.vocab_size = vocab_size
 
@@ -64,7 +72,7 @@ class pmExperiment(pl.LightningModule):
 
         val_acc = self.model.mlm_accuracy(batch, outputs)
         self.log("val_acc_step", val_acc)
-        self.batch_train_acc.append(val_acc)
+        self.batch_val_acc.append(val_acc)
 
         return val_loss
 
