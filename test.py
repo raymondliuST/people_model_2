@@ -8,7 +8,6 @@ with open('config/pm.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
 dataset = mlDataset(config)
-
 dataloader = mlDataModule(config)
 
 model = PeopleModel(len(dataset.vocab_dict))

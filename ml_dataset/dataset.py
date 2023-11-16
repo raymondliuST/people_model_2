@@ -40,13 +40,13 @@ class mlDataset(Dataset):
         mask_arr = rand < 0.8
         # while all(mask_arr) == True:
         #     mask_arr = rand < 0.8
-        mask_arr[-1] = False
         selection = torch.flatten((mask_arr).nonzero()).tolist()
-        
-        
+        not_selection = torch.flatten((~mask_arr).nonzero()).tolist()
+
         input = datapoint.clone()
         label = datapoint.clone()
         input[selection] = self.mask_token
+        label[not_selection] = self.mask_token
 
         item = {
             "input":input,

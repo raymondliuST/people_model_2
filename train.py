@@ -12,11 +12,8 @@ from pytorch_lightning.callbacks import EarlyStopping
 
 def main(dataset_config_path):
     # Define your model, dataset, and dataloader
-    with open(dataset_config_path, 'r') as file:
-        try:
-            config = yaml.safe_load(file)
-        except yaml.YAMLError as exc:
-            print(exc)
+    with open('config/pm.yaml', 'r') as file:
+        config = yaml.safe_load(file)
 
     torch.multiprocessing.set_sharing_strategy("file_system") 
 
@@ -29,7 +26,7 @@ def main(dataset_config_path):
     model_module = pmExperiment(config, vocab_size)
 
     # Initialize WandbLogger with your project name and any other desired settings
-    wandb_logger = WandbLogger(project="pm2", log_model=True)
+    wandb_logger = WandbLogger(project=config["model_params"]["name"], log_model=True)
     for key, dict in config.items():
         wandb_logger.experiment.config.update(dict)
 
@@ -41,14 +38,13 @@ def main(dataset_config_path):
         verbose=False,
         mode='min'
     )
-
     
     # Define a Lightning Trainer with WandbLogger for experiment tracking
     trainer = pl.Trainer(
         accelerator="gpu", 
         devices=1,
         logger=wandb_logger,  # Use the WandbLogger for experiment tracking
-        max_epochs=80,  # Number of training epochs
+        max_epochs=config["model_params"]["epoch"],  # Number of training epochs
         progress_bar_refresh_rate=1,  # Update the progress bar every 10 batches
         log_every_n_steps=1,  # Log metrics every batch
         default_root_dir = "./checkpoints",

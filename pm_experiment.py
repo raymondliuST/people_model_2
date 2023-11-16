@@ -14,7 +14,6 @@ class pmExperiment(pl.LightningModule):
     def __init__(self,
                  config: dict, vocab_size) -> None:
         super(pmExperiment, self).__init__()
-        self.save_hyperparameters()
 
         model_config = config["model_params"]
         self.model = PeopleModel(vocab_size, 
@@ -45,9 +44,10 @@ class pmExperiment(pl.LightningModule):
         self.log("train_loss_step", train_loss)
         self.batch_train_loss.append(train_loss.cpu().detach().numpy())
 
-        train_acc = self.model.mlm_accuracy(batch, outputs)
+        train_acc, acc_list = self.model.mlm_accuracy(batch, outputs)
         self.log("train_acc_step", train_acc)
-        self.batch_train_acc.append(train_acc)
+        # self.log_dict({f"{i}_train_acc" : acc for i, acc in enumerate(acc_list)})
+        self.batch_train_acc.append(train_acc.cpu().detach().numpy())
 
         return train_loss
     
@@ -67,12 +67,12 @@ class pmExperiment(pl.LightningModule):
         outputs = self.forward(batch)
 
         val_loss = self.model.loss_func(batch, outputs)
-        self.log("val_loss_step", val_loss)
+        self.log("val_loss_step", val_loss, on_step=True, on_epoch=False)
         self.batch_val_loss.append(val_loss.cpu().detach().numpy())
 
-        val_acc = self.model.mlm_accuracy(batch, outputs)
-        self.log("val_acc_step", val_acc)
-        self.batch_val_acc.append(val_acc)
+        val_acc, acc_list = self.model.mlm_accuracy(batch, outputs)
+        self.log("val_acc_step", val_acc, on_step=True, on_epoch=False)
+        self.batch_val_acc.append(val_acc.cpu().detach().numpy())
 
         return val_loss
 

@@ -5,6 +5,7 @@ from .embedding import TokenEmbedding
 import numpy as np
 import torch
 from .embedding import BERTEmbedding
+from torchmetrics.functional.classification import multiclass_accuracy
 
 class MaskedLanguageModel(nn.Module):
     """
@@ -22,7 +23,8 @@ class MaskedLanguageModel(nn.Module):
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
-        return self.softmax(self.linear(x))
+        # return self.softmax(self.linear(x))
+        return self.linear(x)
     
 
 class PeopleModel(nn.Module):
@@ -45,7 +47,7 @@ class PeopleModel(nn.Module):
         self.attn_heads = attn_heads
         self.dropout = dropout
         
-        self.vocab_size = vocab_size
+        self.vocab_size = vocab_size - 1
         # paper noted they used 4*hidden_size for ff_network_hidden_size
         self.feed_forward_hidden = hidden * 4
 
@@ -58,14 +60,33 @@ class PeopleModel(nn.Module):
         
         self.head = MaskedLanguageModel(self.hidden, self.vocab_size)
 
-        self.NLL = nn.NLLLoss(ignore_index=vocab_size)
+        self.NLL = nn.NLLLoss(ignore_index=self.vocab_size)
+        self.CEL = nn.CrossEntropyLoss(ignore_index=self.vocab_size)
 
     def forward(self, batch):
-        # attention masking for padded token
-        # torch.ByteTensor([batch_size, 1, seq_len, seq_len)
         input = batch["input"]
 
-        mask = (input > 0).unsqueeze(1).repeat(1, input.size(1), 1).unsqueeze(1)
+        # attention masking for padded token
+        # torch.ByteTensor([batch_size, 1, seq_len, seq_len)
+        mask = (input != self.vocab_size).unsqueeze(1).repeat(1, input.size(1), 1).unsqueeze(1)
+
+        # batch_masked_position = batch["mask"]
+        # batch_size, sequence_length = batch["mask"].shape
+        # attention_masks = []
+        # for i in range(batch_size):
+        #     sequence_mask = batch_masked_position[i]
+        #     attention_mask = torch.zeros(sequence_length, sequence_length, device=batch["mask"].device)
+
+        #     for j in range(sequence_length):
+        #         for k in range(sequence_length):
+        #             if sequence_mask[j] == False or sequence_mask[k] == False:
+        #                 attention_mask[j][k] = 1 # Set a very large negative value for masked positions
+        #             else:
+        #                 attention_mask[j][k] = 0 
+
+        #     attention_masks.append(attention_mask.unsqueeze(0))
+
+        # attention_masks = torch.stack(attention_masks, dim = 0)
 
         x = self.embedding(input)
         
@@ -77,26 +98,29 @@ class PeopleModel(nn.Module):
         return output
     
     def loss_func(self, batch, output):
+        batch_size = batch["label"].shape[0]
+        seq_length = batch["label"].shape[1]
         
-        prediction_matrix = output.transpose(1,2)
-        target_matrix = batch["label"]
-
-        loss = self.NLL(prediction_matrix, target_matrix)
+        prediction_matrix = output.view(batch_size * seq_length, self.vocab_size)
+        target_matrix = batch["label"].view(batch_size * seq_length)
+        
+        loss = self.CEL(prediction_matrix, target_matrix)
         
         return loss
     
     def mlm_accuracy(self, batch, output):
+        batch_size = batch["label"].shape[0]
+        seq_length = batch["label"].shape[1]
         
-        label = batch["label"].cpu().detach().numpy()
+        prediction_matrix = output.transpose(1,2)
+        target_matrix = batch["label"]
+
+        accuracy = multiclass_accuracy(prediction_matrix, target_matrix, num_classes = self.vocab_size, ignore_index=self.vocab_size)
         
-        predictions = torch.argmax(output, 2).cpu().detach().numpy()
-        
-        relevent_indexes = np.where(label != -100)
-        relevent_predictions = predictions[relevent_indexes]
+        accuracy_list = []
+        for i in range(seq_length):
+            acc_i = multiclass_accuracy(prediction_matrix[:, :, i], target_matrix[:, i], num_classes = self.vocab_size, ignore_index=self.vocab_size)
+            accuracy_list.append(acc_i)
 
-        relevent_targets = label[relevent_indexes]
-
-        corrects = np.equal(relevent_predictions, relevent_targets)
-
-        return corrects.mean()
+        return accuracy, accuracy_list
         
