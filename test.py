@@ -13,17 +13,9 @@ dataloader = mlDataModule(config)
 
 model = PeopleModel(len(dataset.vocab_dict))
 exp = pmExperiment(config, len(dataset.vocab_dict))
-for batch in dataloader.train_dataloader():
-    
-    output = model.forward(batch)
-    loss = model.loss_func(batch, output)
-    acc = model.metric(batch, output)
 
-    # t = model.training_step(batch)
-    # v = model.on
-    exp.training_step(batch)
-    import pdb
-    pdb.set_trace()
+for batch in dataloader.train_dataloader():
+    exp.validation_step(batch, None)
 
 # import pdb
 # pdb.set_trace()

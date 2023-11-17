@@ -77,6 +77,8 @@ class PeopleModel(nn.Module):
             x = transformer.forward(x, mask)
 
         output = self.head(x)
+        import pdb
+        pdb.set_trace()
 
         return output
     

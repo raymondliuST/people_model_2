@@ -19,7 +19,7 @@ def main(dataset_config_path):
 
 
     dataloader = mlDataModule(config)
-    vocab_size = len(dataloader.train_dataset.vocab_dict)
+    vocab_size = len(dataloader.train_dataset.vocab_dict) # 51
     print(f"Vocab size is {vocab_size}")
     print(f"Train Dataset contains {dataloader.train_dataset.__len__()} records")
 
