@@ -5,6 +5,7 @@ from pyspark.sql import SparkSession
 from .tokenizer import *
 import pandas as pd
 import numpy as np
+import random
 
 class mlDataset(Dataset):
     def __init__(self, config, partition="train"):
@@ -37,9 +38,12 @@ class mlDataset(Dataset):
 
         rand = torch.rand(datapoint.shape)
         # has 80 percent chance to be masked
-        mask_arr = rand < 0.8
+        mask_arr = rand < 0.15
         # while all(mask_arr) == True:
         #     mask_arr = rand < 0.8
+        mask_arr = torch.zeros(4, dtype=torch.bool)
+        mask_arr[random.randint(0, 3)] = True
+
         selection = torch.flatten((mask_arr).nonzero()).tolist()
         not_selection = torch.flatten((~mask_arr).nonzero()).tolist()
 

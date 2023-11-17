@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 import torch.nn as nn
 
 import numpy as np
-from people_model import *
+from people_model import SimpleModel, PeopleModel
 
 
 class pmExperiment(pl.LightningModule):
@@ -21,9 +21,9 @@ class pmExperiment(pl.LightningModule):
                                  n_layers = model_config["n_layers"], 
                                  attn_heads = model_config["attn_heads"],
                                  dropout=model_config["dropout"])
-        
+
         self.params = config["exp_params"]
-        self.vocab_size = vocab_size
+        self.vocab_size = vocab_size #51
 
         # For batch loss calculation
         self.batch_train_loss = []
@@ -44,9 +44,8 @@ class pmExperiment(pl.LightningModule):
         self.log("train_loss_step", train_loss)
         self.batch_train_loss.append(train_loss.cpu().detach().numpy())
 
-        train_acc, acc_list = self.model.mlm_accuracy(batch, outputs)
+        train_acc = self.model.metric(batch, outputs)
         self.log("train_acc_step", train_acc)
-        # self.log_dict({f"{i}_train_acc" : acc for i, acc in enumerate(acc_list)})
         self.batch_train_acc.append(train_acc.cpu().detach().numpy())
 
         return train_loss
@@ -70,7 +69,7 @@ class pmExperiment(pl.LightningModule):
         self.log("val_loss_step", val_loss, on_step=True, on_epoch=False)
         self.batch_val_loss.append(val_loss.cpu().detach().numpy())
 
-        val_acc, acc_list = self.model.mlm_accuracy(batch, outputs)
+        val_acc = self.model.metric(batch, outputs)
         self.log("val_acc_step", val_acc, on_step=True, on_epoch=False)
         self.batch_val_acc.append(val_acc.cpu().detach().numpy())
 

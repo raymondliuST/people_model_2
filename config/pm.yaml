@@ -1,19 +1,18 @@
 model_params:
-  name: 'pm4'
-  hidden: 512
-  n_layers: 12
-  attn_heads: 8
+  name: 'pm5'
+  hidden: 32
+  n_layers: 1
+  attn_heads: 4
   dropout: 0.1
-  epoch: 200
+  epoch: 1000
+
+exp_params:
+  LR: 0.001
+  weight_decay: 0
 
 data_params:
   data_path: "ml_dataset/pm-dataset-cleaned-indexed.parquet"
   tokenizer_path: "ml_dataset/tokenizer.json"
-  train_batch_size: 128
-  val_batch_size:  128
+  train_batch_size: 1024
+  val_batch_size:  1024
   num_workers: 20
-  
-exp_params:
-  LR: 0.0001
-  weight_decay: 0
-
